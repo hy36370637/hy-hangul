@@ -1,7 +1,7 @@
 ;; -*- lexical-binding: t -*-
 ;;  my-hangul.el — 두벌식 한글 입력기
 ;;  NavilIME Hangul.swift + Keyboard002.swift 직접 포팅
-;;  Ver1.0
+;;
 ;;  키 배치:
 ;;   q=ㅂ  w=ㅈ  e=ㄷ  r=ㄱ  t=ㅅ  y=ㅛ  u=ㅕ  i=ㅑ  o=ㅐ  p=ㅔ
 ;;   a=ㅁ  s=ㄴ  d=ㅇ  f=ㄹ  g=ㅎ  h=ㅗ  j=ㅓ  k=ㅏ  l=ㅣ
@@ -10,13 +10,10 @@
 ;;   연속: qq=ㅃ ww=ㅉ ee=ㄸ rr=ㄲ tt=ㅆ(초성) oo=ㅒ pp=ㅖ tt=ㅆ(종성)
 
 (require 'quail)
-;; hangul.el 은 leim/quail 디렉토리에 있음
-(add-to-list 'load-path
-             "/Applications/Emacs.app/Contents/Resources/lisp/leim/quail")
-(require 'hangul)
+(require 'hanja-util)
 
 ;;; ============================================================
-;;; 레이아웃 테이블
+;;; 레이아웃 테이블 (Keyboard002.swift 그대로)
 ;;; ============================================================
 
 (defconst my-hangul-cho-layout
@@ -214,7 +211,7 @@ CURRENT: 키 문자열 리스트.
           (setq my-hangul--preedit nchars)
           (unless (and my-hangul--overlay (overlay-buffer my-hangul--overlay))
             (setq my-hangul--overlay (make-overlay (point) (point)))
-            (overlay-put my-hangul--overlay 'face 'underline))
+            (overlay-put my-hangul--overlay 'face '(:underline (:color "yellow" :style line))))
           (move-overlay my-hangul--overlay (- (point) nchars) (point))
           ;; hangul-to-hanja-conversion 이 quail-overlay 위치로 preedit 감지
           (when (overlayp quail-overlay)
@@ -235,6 +232,25 @@ CURRENT: 키 문자열 리스트.
     (setq my-hangul--overlay nil))
   (when (overlayp quail-overlay)
     (move-overlay quail-overlay (point) (point))))
+
+;;; ============================================================
+;;; 한자/기호 변환
+;;; ============================================================
+
+(defun my-hangul-event-p (event)
+  "한글 유니코드 이벤트 여부 확인 (음절/자모/호환자모)."
+  (and (integerp event)
+       (or (and (>= event #xAC00) (<= event #xD7A3))   ; 한글 음절
+           (and (>= event #x1100) (<= event #x11FF))   ; 한글 자모
+           (and (>= event #x3130) (<= event #x318F))))) ; 호환 자모
+
+(defun my-hangul-to-hanja-conversion ()
+  "직전 한글 문자를 한자/기호로 변환."
+  (interactive)
+  (let ((hanja (hangul-to-hanja-char (preceding-char))))
+    (when hanja
+      (delete-char -1)
+      (insert (string hanja)))))
 
 ;;; ============================================================
 ;;; Process / Flush / Backspace
@@ -285,7 +301,10 @@ CURRENT: 키 문자열 리스트.
   (and (>= key ?A) (<= key ?z) (not (and (> key ?Z) (< key ?a)))))
 
 (defun my-hangul-input-method (key)
-  (if (or buffer-read-only (not (my-hangul--alpha-p key)))
+  (if (or buffer-read-only
+          (minibufferp)
+          overriding-terminal-local-map
+          (not (my-hangul--alpha-p key)))
       (list key)
     (let ((input-method-function nil) (echo-keystrokes 0) (help-char nil))
       (my-hangul--process (string key))
@@ -294,12 +313,17 @@ CURRENT: 키 문자열 리스트.
             (while t
               (let* ((event (read-event nil)))
                 (cond
+                 ;; C-g → 입력 취소 후 탈출
+                 ((eq event ?\C-g)
+                  (my-hangul--flush)
+                  (my-hangul--clear)
+                  (signal 'quit nil))
                  ;; 백스페이스
                  ((eq event 127) (my-hangul--backspace))
                  ;; f9 / Hangul_Hanja → 한자 변환
                  ((or (eq event 'f9) (eq event 'Hangul_Hanja))
                   (my-hangul--flush)
-                  (hangul-to-hanja-conversion))
+                  (my-hangul-to-hanja-conversion))
                  ;; 알파벳 → 계속 조합
                  ((and (integerp event) (my-hangul--alpha-p event))
                   (my-hangul--process (string event)))
@@ -330,7 +354,7 @@ CURRENT: 키 문자열 리스트.
 
 (register-input-method
  "korean-my-hangul" "Korean" #'my-hangul-activate "한2"
- "두벌식 한글 입력기")
+ "두벌식 한글 입력기 (NavilIME 포팅)")
 
 (provide 'my-hangul)
 ;;; my-hangul.el ends here
