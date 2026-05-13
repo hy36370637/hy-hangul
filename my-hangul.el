@@ -337,6 +337,37 @@ CURRENT: 키 문자열 리스트.
         (my-hangul--clear)))))
 
 ;;; ============================================================
+;;; Prefix 키 override (C-x, C-c 등 입력 시 한글 입력기 비활성화)
+;;; ============================================================
+
+(defvar my-hangul--prefix-override-map-enable nil
+  "prefix override keymap 활성 여부.")
+
+(defvar my-hangul--prefix-override-map-alist
+  `((my-hangul--prefix-override-map-enable
+     .
+     ,(let ((map (make-sparse-keymap)))
+        (dolist (prefix '("C-x" "C-c" "C-h" "M-x"))
+          (define-key map (kbd prefix)
+                      (lambda (arg)
+                        (interactive "P")
+                        (my-hangul--flush)
+                        (my-hangul--clear)
+                        (deactivate-input-method)
+                        (setq prefix-arg arg)
+                        (prefix-command-preserve-state)
+                        (setq unread-command-events
+                              (append (mapcar (lambda (e) (cons t e))
+                                              (listify-key-sequence
+                                               (this-command-keys)))
+                                      unread-command-events)))))
+        map)))
+  "prefix override keymap alist.")
+
+(add-to-ordered-list 'emulation-mode-map-alists
+                     'my-hangul--prefix-override-map-alist -1000)
+
+;;; ============================================================
 ;;; 입력기 등록
 ;;; ============================================================
 
@@ -345,12 +376,14 @@ CURRENT: 키 문자열 리스트.
   (quail-setup-overlays nil)
   (when (eq (selected-window) (minibuffer-window))
     (add-hook 'minibuffer-exit-hook #'quail-exit-from-minibuffer))
-  (setq-local input-method-function #'my-hangul-input-method))
+  (setq-local input-method-function #'my-hangul-input-method)
+  (setq my-hangul--prefix-override-map-enable t))
 
 (defun my-hangul-deactivate ()
   (my-hangul--flush) (my-hangul--clear)
   (quail-delete-overlays)
-  (kill-local-variable 'input-method-function))
+  (kill-local-variable 'input-method-function)
+  (setq my-hangul--prefix-override-map-enable nil))
 
 (register-input-method
  "korean-my-hangul" "Korean" #'my-hangul-activate "한2"
