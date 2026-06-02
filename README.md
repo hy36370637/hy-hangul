@@ -14,7 +14,7 @@
 
 1.  Clone this repository to your local machine:
     ```bash
-    git clone [https://github.com/hy36370637/hy-hangul.git](https://github.com/hy36370637/hy-hangul.git)
+    git clone [https://github.com/hy0637/hy-hangul.git](https://github.com/hy0637/hy-hangul.git)
     ```
 
 2.  Add the following to your `init.el` or `.emacs`:
