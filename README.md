@@ -1,8 +1,8 @@
-# my-hangul.el
+# hy-hangul.el
 
 **A Lightweight, Native Dubeolsik (2-Bureol) Hangul Input Method for Emacs**
 
-`my-hangul.el` is a streamlined Korean input method for Emacs, inspired by the architecture of **NavilIME**. It provides a smooth "Dokkaebibul" (ghost-fire) composition experience while maintaining full compatibility with Emacs' native keybinding system.
+`hy-hangul.el` is a streamlined Korean input method for Emacs, inspired by the architecture of **NavilIME**. It provides a smooth "Dokkaebibul" (ghost-fire) composition experience while maintaining full compatibility with Emacs' native keybinding system.
 
 ## Key Features
 
@@ -14,22 +14,22 @@
 
 1.  Clone this repository to your local machine:
     ```bash
-    git clone [https://github.com/hy36370637/my-hangul.git](https://github.com/hy36370637/my-hangul.git)
+    git clone [https://github.com/hy36370637/hy-hangul.git](https://github.com/hy36370637/hy-hangul.git)
     ```
 
 2.  Add the following to your `init.el` or `.emacs`:
     ```elisp
-    (add-to-list 'load-path "/path/to/my-hangul")
-    (require 'my-hangul)
+    (add-to-list 'load-path "/path/to/hy-hangul")
+    (require 'hy-hangul)
 
     ;; Optional: Set as the default Korean input method
-    (setq default-input-method "korean-my-hangul")
+    (setq default-input-method "korean-hy-hangul")
     ```
 
 ## Usage
 
 * **Toggle Input Method**: Press `C-\` (default Emacs toggle).
-* **Select Method**: If not set as default, run `M-x set-input-method` and select `korean-my-hangul`.
+* **Select Method**: If not set as default, run `M-x set-input-method` and select `korean-hy-hangul`.
 * **Input Logic**:
     * Standard Dubeolsik layout.
     * `o` + `o` → `ㅒ`
