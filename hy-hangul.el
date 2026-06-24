@@ -19,12 +19,19 @@
 ;; v1.2: F9 기능 통합 - 조합 중 F9→한자/기호 변환(기존),
 ;;       완성된 글자에서 F9→커서 위치 글자 한자 변환(바닐라 방식 채택). M-F9 제거
 ;;       C-h I 입력기 도움말 추가
+;;
+;;;; TODO
+;; [ ] activate-input-method에 advice로 Unrecognized input method 에러 방어
+;;     모든 경로(toggle-korean-input-method, C-\, 시작 시, desktop-read) 커버
+;;     condition-case로 에러 잡아 deactivate-input-method 후 메시지 표시
+;;     테스트 곤란으로 보류 중
+
 
 (require 'quail)
 (require 'hanja-util)
 
 ;;; ============================================================
-;;; 레이아웃 테이블 (Keyboard002.swift 그대로)
+;;; 레이아웃 테이블
 ;;; ============================================================
 
 (defconst hy/hangul-cho-layout
@@ -94,6 +101,7 @@
     (#x110F . #x314B) (#x1110 . #x314C) (#x1111 . #x314D)
     (#x1112 . #x314E)))
 
+
 ;;; ============================================================
 ;;; 해시테이블 및 유니코드 조합
 ;;; ============================================================
@@ -126,6 +134,7 @@
      (jung (string (decode-char 'ucs jung)))
      (cho  (string (decode-char 'ucs (or (gethash cho hy/hangul-cho-compat-table) #x3131))))
      (t ""))))
+
 
 ;;; ============================================================
 ;;; Automata 핵심 오토마타
@@ -163,6 +172,7 @@
     (let* ((size (+ (length cho) (length jung) (length jong)))
            (remaining (if done (nthcdr size current) nil)))
       (list cho jung jong done remaining))))
+
 
 ;;; ============================================================
 ;;; Preedit 및 상태 제어
@@ -241,6 +251,7 @@
            (str (hy/hangul--norm (nth 0 result) (nth 1 result) (nth 2 result))))
       (hy/hangul--show str))))
 
+
 ;;; ============================================================
 ;;; 입력 메서드 루프
 ;;; ============================================================
@@ -283,6 +294,7 @@
         (hy/hangul--flush)
         (hy/hangul--clear)))))
 
+
 ;;; ============================================================
 ;;; 입력기 등록 및 활성화
 ;;; ============================================================
@@ -314,16 +326,21 @@
   (when (eq (selected-window) (minibuffer-window))
     (add-hook 'minibuffer-exit-hook #'quail-exit-from-minibuffer))
   (setq-local input-method-function #'hy/hangul-input-method)
-  (global-set-key (kbd "<f9>") #'hy/hangul-to-hanja-at-point))
+  (setq-local input-method-function #'hy/hangul-input-method)
+  (local-set-key (kbd "<f9>")       #'hy/hangul-to-hanja-at-point))
+  ;; (global-set-key (kbd "<f9>") #'hy/hangul-to-hanja-at-point)
 
 (defun hy/hangul-deactivate ()
   (hy/hangul--flush) (hy/hangul--clear)
   (quail-delete-overlays)
-  (kill-local-variable 'input-method-function))
+  (kill-local-variable 'input-method-function)
+  ; 로컬 맵에서 키 바인딩 제거
+  (local-unset-key (kbd "<f9>")))
 
 (register-input-method
  "korean-hy-hangul" "Korean" #'hy/hangul-activate "한2"
  "두벌식 한글 입력기")
+
 
 (provide 'hy-hangul)
 ;;; hy-hangul.el ends here
