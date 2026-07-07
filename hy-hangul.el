@@ -9,7 +9,7 @@
 ;;   Q=ㅃ  W=ㅉ  E=ㄸ  R=ㄲ  T=ㅆ(초성/종성)  O=ㅒ  P=ㅖ
 ;;   연속: qq=ㅃ ww=ㅉ ee=ㄸ rr=ㄲ tt=ㅆ(초성) oo=ㅒ pp=ㅖ tt=ㅆ(종성)
 ;;
-;; version 1.2
+;; version 1.2.1
 ;;
 ;;;; 변경 이력
 ;; v1.0: 두벌식 한글 입력, 겹받침/쌍자음, oo→ㅒ/pp→ㅖ, F9 한자/기호 변환,
@@ -19,6 +19,8 @@
 ;; v1.2: F9 기능 통합 - 조합 중 F9→한자/기호 변환(기존),
 ;;       완성된 글자에서 F9→커서 위치 글자 한자 변환(바닐라 방식 채택). M-F9 제거
 ;;       C-h I 입력기 도움말 추가
+;; v1.2.1: 백스페이스 버그 수정 - macOS GUI에서 backspace 심볼로 인식되는 문제
+;;         127과 'backspace 심볼 모두 처리하도록 수정
 ;;
 ;;;; TODO
 ;; [ ] activate-input-method에 advice로 Unrecognized input method 에러 방어
@@ -278,7 +280,7 @@
                  ((eq event ?\C-g)
                   (hy/hangul--clear) (setq hy/hangul--current nil)
                   (signal 'quit nil))
-                 ((eq event 127) (hy/hangul--backspace))
+                 ((or (eq event 127) (eq event 'backspace)) (hy/hangul--backspace))
                  ((or (eq event 'f9) (eq event 'Hangul_Hanja))
                   (hy/hangul--flush) (hy/hangul-to-hanja-conversion))
                  ((and (integerp event) (hy/hangul--alpha-p event))
